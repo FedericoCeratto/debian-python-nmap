@@ -5,6 +5,8 @@ Maintainer: Federico Ceratto <federico.ceratto@gmail.com>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.8.4
 Homepage: http://xael.org/norman/python/python-nmap/
+Vcs-Git: git://git.debian.org/git/collab-maint/python-nmap.git
+Vcs-Browser: http://git.debian.org/?p=collab-maint/python-nmap.git
 
 Package: python-nmap
 Architecture: all
