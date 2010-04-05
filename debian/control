@@ -1,13 +1,16 @@
 Source: python-nmap
-Section: unknown
-Priority: extra
+Section: python
+Priority: optional
 Maintainer: Federico Ceratto <federico.ceratto@gmail.com>
 Build-Depends: debhelper (>= 7)
 Standards-Version: 3.8.4
-Homepage: <insert the upstream URL, if relevant>
+Homepage: http://xael.org/norman/python/python-nmap/
 
 Package: python-nmap
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}
+Description: Python interface to the Nmap port scanner
+ It allows to manipulate nmap scan results and can
+ be useful for systems administrators who want to 
+ automate scanning task and reports.
+ It also supports nmap script outputs.
