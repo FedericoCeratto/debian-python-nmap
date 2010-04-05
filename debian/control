@@ -1,0 +1,13 @@
+Source: python-nmap
+Section: unknown
+Priority: extra
+Maintainer: Federico Ceratto <federico.ceratto@gmail.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.4
+Homepage: <insert the upstream URL, if relevant>
+
+Package: python-nmap
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: <insert up to 60 chars description>
+ <insert long description, indented with spaces>
