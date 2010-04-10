@@ -2,6 +2,8 @@ Source: python-nmap
 Section: python
 Priority: optional
 Maintainer: Federico Ceratto <federico.ceratto@gmail.com>
+Uploaders:
+ David Paleino <dapal@debian.org>
 Build-Depends: debhelper (>= 7)
  , python-support (>= 0.90.0~)
  , python
