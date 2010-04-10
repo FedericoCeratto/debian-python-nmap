@@ -3,14 +3,18 @@ Section: python
 Priority: optional
 Maintainer: Federico Ceratto <federico.ceratto@gmail.com>
 Build-Depends: debhelper (>= 7)
+ , python-support (>= 0.90.0~)
+ , python
 Standards-Version: 3.8.4
 Homepage: http://xael.org/norman/python/python-nmap/
 Vcs-Git: git://git.debian.org/git/collab-maint/python-nmap.git
 Vcs-Browser: http://git.debian.org/?p=collab-maint/python-nmap.git
+XS-Python-Version: >= 2.5
 
 Package: python-nmap
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
+Provides: ${python:Provides}
 Description: Python interface to the Nmap port scanner
  It allows to manipulate nmap scan results and can
  be useful for systems administrators who want to 
