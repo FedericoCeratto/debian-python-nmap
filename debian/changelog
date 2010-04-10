@@ -1,12 +1,5 @@
-python-nmap (0.1.1-2) unstable; urgency=low
-
-  * debian/control: Vcs-Git and Vcs-Browser added
-  * debian/docs: license file removed
-
- -- Federico Ceratto <federico.ceratto@gmail.com>  Mon, 05 Apr 2010 18:07:40 +0100
-
 python-nmap (0.1.1-1) unstable; urgency=low
 
   * Initial release (Closes: #573107)
 
- -- Federico Ceratto <federico.ceratto@gmail.com>  Mon, 05 Apr 2010 15:45:27 +0100
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Sat, 10 Apr 2010 15:14:58 +0100
