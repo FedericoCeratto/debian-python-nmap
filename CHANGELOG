@@ -1,4 +1,12 @@
-python-nmap
+Changelog
+=========
 
-Version 0.1.0:
-        Initial distribution
+2010/06/03
+ - Import on google code
+   svn checkout https://python-nmap.googlecode.com/svn/trunk/ python-nmap --username  XXXXX
+
+2010/03/09
+ - Modified packaging. v0.1.1 [norman]
+
+2010/03/08
+ - Initial release. v0.1.0 [norman]
