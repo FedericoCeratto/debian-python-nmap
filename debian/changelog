@@ -5,8 +5,9 @@ python-nmap (0.1.2-1) unstable; urgency=low
 
   [ David Paleino ]
   * debian/examples added
+  * debian/rules: remove example.py from the module directory
 
- -- David Paleino <dapal@debian.org>  Sun, 06 Jun 2010 17:25:16 +0200
+ -- David Paleino <dapal@debian.org>  Sun, 06 Jun 2010 17:25:35 +0200
 
 python-nmap (0.1.1-1) unstable; urgency=low
 

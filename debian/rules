@@ -2,3 +2,7 @@
 
 %:
 	dh --buildsystem=python_distutils $@
+
+override_dh_auto_install:
+	dh_auto_install
+	find $(CURDIR)/debian/ -name "example.py" -delete
