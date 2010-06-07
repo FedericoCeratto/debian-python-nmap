@@ -2,9 +2,10 @@
 # -*- coding: latin-1 -*-
 
 """
-nmap.py - v0.1.2 - 2010.06.03
+nmap.py - v0.1.3 - 2010.06.07
 
 Author : Alexandre Norman - norman@xael.org
+Contributor: Steve 'Ashcrow' Milner - steve@gnulinux.net
 Licence : GPL v3 or any later version
 
 
@@ -26,7 +27,7 @@ Test strings :
 ^^^^^^^^^^^^
 >>> import nmap
 >>> nm = nmap.PortScanner()
->>> nm.scan('127.0.0.1', '22-443')
+>>> r=nm.scan('127.0.0.1', '22-443')
 >>> nm.command_line()
 u'nmap -oX - -p 22-443 -sV 127.0.0.1'
 >>> nm.scaninfo()
@@ -57,15 +58,19 @@ u'1'
 u'0'
 >>> nm.scanstats()['totalhosts']
 u'1'
->>> nm.scanstats().has_key('timestr')
+>>> 'timestr' in nm.scanstats().keys()
 True
->>> nm.scanstats().has_key('elapsed')
+>>> 'elapsed' in nm.scanstats().keys()
 True
+>>> nm.listscan('192.168.1.0/30')
+[u'192.168.1.0', u'192.168.1.1', u'192.168.1.2', u'192.168.1.3']
+>>> nm.listscan('localhost/30')
+[u'127.0.0.0', u'127.0.0.1', u'127.0.0.2', u'127.0.0.3']
 """
 
 
 __author__ = 'Alexandre Norman (norman@xael.org)'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 import os
@@ -76,9 +81,17 @@ import sys
 import xml.dom.minidom
 import shlex
 
+
+
+try:
+    from multiprocessing import Process
+except ImportError:
+    # For pre 2.6 releases
+    from threading import Thread as Process
+
 ############################################################################
 
-class PortScanner():
+class PortScanner(object):
     """
     PortScanner allows to use nmap from python
     """
@@ -96,9 +109,10 @@ class PortScanner():
         self._nmap_last_output = ''  # last full ascii nmap output
         is_nmap_found = False       # true if we have found nmap
 
-        # regex used to detect nmap
-        regex = re.compile('Nmap version [0-9]*\.[0-9]* \( http://nmap\.org \)')
+        self.__process = None
 
+        # regex used to detect nmap
+        regex = re.compile('Nmap version [0-9]*\.[0-9]*[^ ]* \( http://nmap\.org \)')
         # launch 'nmap -V', we wait after 'Nmap version 5.0 ( http://nmap.org )'
         p = subprocess.Popen(['nmap', '-V'], bufsize=10000, stdout=subprocess.PIPE)
         self._nmap_last_output = p.communicate()[0] # store stdout
@@ -124,15 +138,12 @@ class PortScanner():
         return
 
 
-
     def get_nmap_last_output(self):
         """
         returns the last text output of nmap in raw text
         this may be used for debugging purpose
         """
         return self._nmap_last_output
-
-
 
 
 
@@ -144,6 +155,13 @@ class PortScanner():
         return (self._nmap_version_number, self._nmap_subversion_number)
 
 
+
+    def listscan(self, hosts='127.0.0.1'):
+        """
+        do not scan but interpret target hosts and return a list a hosts
+        """
+        self.scan(hosts, arguments='-sL')
+        return self.all_hosts()
 
 
 
@@ -243,7 +261,7 @@ class PortScanner():
                 for dname in dport.getElementsByTagName('service'):
                     name = dname.getAttributeNode('name').value
                 # store everything
-                if not scan_result['scan'][host].has_key(proto):
+                if not proto in scan_result['scan'][host].keys():
                     scan_result['scan'][host][proto] = {}
                 scan_result['scan'][host][proto][port] = {'state': state,
                                                   'reason': reason,
@@ -254,14 +272,15 @@ class PortScanner():
                 for dscript in dport.getElementsByTagName('script'):
                     script_id = dscript.getAttributeNode('id').value
                     script_out = dscript.getAttributeNode('output').value
-                    if not scan_result['scan'][host][proto][port].has_key('script'):
+                    if not 'script' in scan_result['scan'][host][proto][port].keys():
                         scan_result['scan'][host][proto][port]['script'] = {}
 
                     scan_result['scan'][host][proto][port]['script'][script_id] = script_out
 
 
         self._scan_result = scan_result # store for later use
-        return
+        return scan_result
+
 
     
     def __getitem__(self, host):
@@ -275,6 +294,8 @@ class PortScanner():
         """
         returns a sorted list of all hosts
         """
+        if not 'scan' in self._scan_result.keys():
+            return []
         listh = self._scan_result['scan'].keys()
         listh.sort()
         return listh
@@ -307,13 +328,102 @@ class PortScanner():
         """
         returns True if host has result, False otherwise
         """
-        if self._scan_result['scan'].has_key(host):
+        if host in self._scan_result['scan'].keys():
             return True
 
         return False
 
 
 
+
+############################################################################
+
+
+class PortScannerAsync(object):
+    """
+    PortScannerAsync allows to use nmap from python asynchronously
+    for each host scanned, callback is called with scan result for the host
+    """
+
+    def __init__(self):
+        """
+        Initialize the module
+        detects nmap on the system and nmap version
+        may raise PortScannerError exception if nmap is not found in the path
+        """
+        self._process = None
+        self._nm = PortScanner()
+        return
+
+
+    def __del__(self):
+        """
+        Cleanup when deleted
+        """
+        if self._process is not None and self._process.is_alive():
+            self._process.terminate()
+        return
+
+
+    def scan(self, hosts='127.0.0.1', ports=None, arguments='-sV', callback=None):
+        """
+        Scan given hosts in a separate process and return host by host result using callback function
+
+        PortScannerError exception from standard nmap is catched and you won't know about it
+
+        hosts = string for hosts as nmap use it 'scanme.nmap.org' or '198.116.0-255.1-127' or '216.163.128.20/20'
+        ports = string for ports as nmap use it '22,53,110,143-4564'
+        arguments = string of arguments for nmap '-sU -sX -sC'
+        callback = callback function which takes (host, scan_data) as arguments
+        """
+
+        def scan_progressive(self, hosts, ports, arguments, callback):
+            for host in self._nm.listscan(hosts):
+                try:
+                    scan_data = self._nm.scan(host, ports, arguments)
+                except PortScannerError:
+                    pass
+                if callback is not None and callable(callback):
+                    callback(host, scan_data)
+            return
+
+        self._process = Process(
+            target=scan_progressive,
+            args=(self, hosts, ports, arguments, callback)
+            )
+        self._process.daemon = True
+        self._process.start()
+        return
+
+
+    def stop(self):
+        """
+        Stop the current scan process
+        """
+        if self._process is not None:
+            self._process.terminate()
+        return
+
+
+    def wait(self, timeout=None):
+        """
+        Wait for the current scan process to finish, or timeout
+        """
+        self._process.join(timeout)
+        return
+
+    
+
+    def still_scanning(self):
+        """
+        Return True if a scan is currently running, False otherwise
+        """
+        try:
+            return self._process.is_alive()
+        except:
+            return False
+
+    
 
 ############################################################################
     
@@ -353,7 +463,7 @@ class PortScannerHostDict(dict):
         """
         returns list of tcp ports
         """
-        if self.has_key('tcp'):
+        if 'tcp' in self.keys():
             ltcp = self['tcp'].keys()
             ltcp.sort()
             return ltcp
@@ -364,8 +474,8 @@ class PortScannerHostDict(dict):
         """
         returns True if tcp port has info, False otherwise
         """
-        if (self.has_key('tcp')
-            and self['tcp'].has_key(port)):
+        if ('tcp' in self.keys()
+            and port in self['tcp'].keys()):
             return True
         return False
 
@@ -381,7 +491,7 @@ class PortScannerHostDict(dict):
         """
         returns list of udp ports
         """
-        if self.has_key('udp'):
+        if 'udp' in self.keys():
             ludp = self['udp'].keys()
             ludp.sort()
             return ludp
@@ -392,8 +502,8 @@ class PortScannerHostDict(dict):
         """
         returns True if udp port has info, False otherwise
         """
-        if (self.has_key('udp')
-            and self['udp'].has_key(port)):
+        if ('udp' in self.keys()
+            and 'port' in self['udp'].keys()):
             return True
         return False
 
@@ -409,7 +519,7 @@ class PortScannerHostDict(dict):
         """
         returns list of ip ports
         """
-        if self.has_key('ip'):
+        if 'ip' in self.keys():
             lip = self['ip'].keys()
             lip.sort()
             return lip
@@ -420,8 +530,8 @@ class PortScannerHostDict(dict):
         """
         returns True if ip port has info, False otherwise
         """
-        if (self.has_key('ip')
-            and self['ip'].has_key(port)):
+        if ('ip' in self.keys()
+            and port in self['ip'].keys()):
             return True
         return False
 
@@ -437,7 +547,7 @@ class PortScannerHostDict(dict):
         """
         returns list of sctp ports
         """
-        if self.has_key('sctp'):
+        if 'sctp' in self.keys():
             lsctp = self['sctp'].keys()
             lsctp.sort()
             return lsctp
@@ -448,8 +558,8 @@ class PortScannerHostDict(dict):
         """
         returns True if sctp port has info, False otherwise
         """
-        if (self.has_key('sctp')
-            and self['sctp'].has_key(port)):
+        if ('sctp' in self.keys()
+            and port in self['sctp'].keys()):
             return True
         return False
 

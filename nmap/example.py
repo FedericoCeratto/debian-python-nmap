@@ -2,9 +2,10 @@
 # -*- coding: latin-1 -*-
 
 """
-example.py - 2010.06.03
+example.py - 2010.06.07
 
 Author : Alexandre Norman - norman@xael.org
+Contributor: Steve 'Ashcrow' Milner - steve@gnulinux.net
 Licence : GPL v3 or any later version
 
 
@@ -29,11 +30,16 @@ import nmap                         # import nmap.py module
 try:
     nm = nmap.PortScanner()         # instantiate nmap.PortScanner object
 except nmap.PortScannerError:
-    print 'Nmap not found', sys.exc_info()[0]
+    print('Nmap not found', sys.exc_info()[0])
     sys.exit(0)
 except:
-    print "Unexpected error:", sys.exc_info()[0]
+    print("Unexpected error:", sys.exc_info()[0])
     sys.exit(0)
+
+
+
+
+
 
 nm.scan('127.0.0.1', '22-443')      # scan host 127.0.0.1, ports from 22 to 443
 nm.command_line()                   # get command line used for the scan : nmap -oX - -p 22-443 127.0.0.1
@@ -55,25 +61,48 @@ nm['127.0.0.1']['tcp'][22]['state'] # get state of port 22/tcp on host 127.0.0.1
 
 # a more usefull example :
 for host in nm.all_hosts():
-    print '----------------------------------------------------'
-    print 'Host : %s (%s)' % (host, nm[host].hostname())
-    print 'State : %s' % nm[host].state()
+    print('----------------------------------------------------')
+    print('Host : %s (%s)' % (host, nm[host].hostname()))
+    print('State : %s' % nm[host].state())
 
     for proto in nm[host].all_protocols():
-        print '----------'
-        print 'Protocol : %s' % proto
+        print('----------')
+        print('Protocol : %s' % proto)
 
         lport = nm[host][proto].keys()
         lport.sort()
         for port in lport:
-            print 'port : %s\tstate : %s' % (port, nm[host][proto][port]['state'])
+            print('port : %s\tstate : %s' % (port, nm[host][proto][port]['state']))
 
 
 
-print '----------------------------------------------------'
+print('----------------------------------------------------')
 # If you want to do a pingsweep on network 192.168.1.0/24:
 nm.scan(hosts='192.168.1.0/24', arguments='-n -sP -PE -PA21,23,80,3389')
 hosts_list = [(x, nm[x]['status']['state']) for x in nm.all_hosts()]
 for host, status in hosts_list:
-    print '{0}:{1}'.format(host, status)
+    print('{0}:{1}'.format(host, status))
+
+
+
+
+
+
+
+print '----------------------------------------------------'
+# Asynchronous usage of PortScannerAsync
+
+
+nma = nmap.PortScannerAsync()
+
+def callback_result(host, scan_result):
+    print '------------------'
+    print host, scan_result
+
+nma.scan(hosts='192.168.1.0/30', arguments='-sP', callback=callback_result)
+
+while nma.still_scanning():
+    print("Waiting ...")
+    nma.wait(2)   # you can do whatever you want but I choose to wait after the end of the scan
+
 
