@@ -1,3 +1,9 @@
+python-nmap (0.1.4-1) unstable; urgency=low
+
+  * New upstream release. 
+
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Thu, 24 Jun 2010 13:30:30 +0100
+
 python-nmap (0.1.3-1) unstable; urgency=low
 
   * New upstream release.
