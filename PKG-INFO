@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: python-nmap
-Version: 0.1.3
+Version: 0.1.4
 Summary: This is a python class to use nmap and access scan results from python
 Home-page: http://xael.org/norman/python/python-nmap/
 Author: Alexandre Norman
@@ -62,6 +62,18 @@ Description: ===========
                 print('{0}:{1}'.format(host, status))
         
         
+           print '----------------------------------------------------'
+           # Asynchronous usage of PortScannerAsync
+           nma = nmap.PortScannerAsync()
+           def callback_result(host, scan_result):
+               print '------------------'
+               print host, scan_result
+           nma.scan(hosts='192.168.1.0/30', arguments='-sP', callback=callback_result)
+           while nma.still_scanning():
+               print("Waiting ...")
+               nma.wait(2)   # you can do whatever you want but I choose to wait after the end of the scan
+        
+        
         Homepage
         ========
         
@@ -72,7 +84,7 @@ Description: ===========
         =========
         
         2010/06/07
-        Patches from Steve 'Ashcrow' Milner <steve@gnulinux.net>
+        Patches from Steve 'Ashcrow' Milner <steve at gnulinux.net>
          - remove shebang from __init__.py as it is not a runnable script
          - allow use with ALPHA and BETA nmap releases
          - .has_key() is deprecated, replaced instances with in
@@ -82,7 +94,7 @@ Description: ===========
         2010/06/04
          - adding PortScanner.listscan
          - PortScanner.scan now returns scan_result
-         - adding class PortScannerAsync (idea from Steve 'Ashcrow' Milner <steve@gnulinux.net>)
+         - adding class PortScannerAsync (idea from Steve 'Ashcrow' Milner <steve at gnulinux.net>)
         
         2010/06/03
          - Import on google code
