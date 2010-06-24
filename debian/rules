@@ -6,4 +6,3 @@
 override_dh_auto_install:
 	dh_auto_install
 	find $(CURDIR)/debian/ -name "example.py" -delete
-	find $(CURDIR)/debian/ -name "example_non_blocking.py" -delete
