@@ -1,3 +1,9 @@
+python-nmap (0.2.2-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+
+ -- David Paleino <dapal@debian.org>  Sat, 15 Jan 2011 16:40:11 +0100
+
 python-nmap (0.1.4-1) unstable; urgency=low
 
   [ Federico Ceratto ]
