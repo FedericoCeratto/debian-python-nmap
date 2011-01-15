@@ -1,9 +1,9 @@
-python-nmap (0.2.2-1) UNRELEASED; urgency=low
+python-nmap (0.2.2-1) experimental; urgency=low
 
   * New upstream release.
   * Bump Standards-Version to 3.9.1, no changes needed
 
- -- David Paleino <dapal@debian.org>  Sat, 15 Jan 2011 16:41:25 +0100
+ -- David Paleino <dapal@debian.org>  Sat, 15 Jan 2011 17:19:59 +0100
 
 python-nmap (0.1.4-1) unstable; urgency=low
 
