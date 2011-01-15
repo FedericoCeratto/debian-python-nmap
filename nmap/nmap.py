@@ -2,10 +2,11 @@
 # -*- coding: latin-1 -*-
 
 """
-nmap.py - v0.1.4 - 2010.06.20
+nmap.py - version and date, see below
 
-Author : Alexandre Norman - norman@xael.org
-Contributor: Steve 'Ashcrow' Milner - steve@gnulinux.net
+Author : Alexandre Norman - norman at xael.org
+Contributors: Steve 'Ashcrow' Milner - steve at gnulinux.net
+              Brian Bustin - brian at bustin.us
 Licence : GPL v3 or any later version
 
 
@@ -27,50 +28,55 @@ Test strings :
 ^^^^^^^^^^^^
 >>> import nmap
 >>> nm = nmap.PortScanner()
+>>> try:
+...     nm.scan(arguments='-wrongargs')
+... except nmap.PortScannerError:
+...     pass
 >>> r=nm.scan('127.0.0.1', '22-443')
 >>> nm.command_line()
-u'nmap -oX - -p 22-443 -sV 127.0.0.1'
+'nmap -oX - -p 22-443 -sV 127.0.0.1'
 >>> nm.scaninfo()
-{u'tcp': {'services': u'22-443', 'method': u'connect'}}
+{'tcp': {'services': '22-443', 'method': 'connect'}}
 >>> nm.all_hosts()
-[u'127.0.0.1']
+['127.0.0.1']
 >>> nm['127.0.0.1'].hostname()
-u'localhost'
+'localhost.localdomain'
 >>> nm['127.0.0.1'].state()
-u'up'
+'up'
 >>> nm['127.0.0.1'].all_protocols()
-[u'tcp']
+['tcp']
 >>> nm['127.0.0.1']['tcp'].keys()
-[80, 25, 443, 22, 111]
+dict_keys([80, 25, 443, 22, 111])
 >>> nm['127.0.0.1'].has_tcp(22)
 True
 >>> nm['127.0.0.1'].has_tcp(23)
 False
 >>> nm['127.0.0.1']['tcp'][22]
-{'state': u'open', 'reason': u'syn-ack', 'name': u'ssh'}
+{'state': 'open', 'reason': 'syn-ack', 'name': 'ssh'}
 >>> nm['127.0.0.1'].tcp(22)
-{'state': u'open', 'reason': u'syn-ack', 'name': u'ssh'}
+{'state': 'open', 'reason': 'syn-ack', 'name': 'ssh'}
 >>> nm['127.0.0.1']['tcp'][22]['state']
-u'open'
+'open'
 >>> nm.scanstats()['uphosts']
-u'1'
+'1'
 >>> nm.scanstats()['downhosts']
-u'0'
+'0'
 >>> nm.scanstats()['totalhosts']
-u'1'
+'1'
 >>> 'timestr' in nm.scanstats().keys()
 True
 >>> 'elapsed' in nm.scanstats().keys()
 True
 >>> nm.listscan('192.168.1.0/30')
-[u'192.168.1.0', u'192.168.1.1', u'192.168.1.2', u'192.168.1.3']
+['192.168.1.0', '192.168.1.1', '192.168.1.2', '192.168.1.3']
 >>> nm.listscan('localhost/30')
-[u'127.0.0.0', u'127.0.0.1', u'127.0.0.2', u'127.0.0.3']
+['127.0.0.0', '127.0.0.1', '127.0.0.2', '127.0.0.3']
 """
 
 
 __author__ = 'Alexandre Norman (norman@xael.org)'
-__version__ = '0.1.4'
+__version__ = '0.2.2'
+__last_modification__ = '2010.12.17'
 
 
 import os
@@ -81,7 +87,7 @@ import sys
 import types
 import xml.dom.minidom
 import shlex
-
+import collections
 
 
 try:
@@ -97,13 +103,16 @@ class PortScanner(object):
     PortScanner allows to use nmap from python
     """
     
-    def __init__(self):
+    def __init__(self, nmap_search_path=('nmap','/usr/bin/nmap','/usr/local/bin/nmap','/sw/bin/nmap','/opt/local/bin/nmap') ):
         """
         Initialize the module
         detects nmap on the system and nmap version
         may raise PortScannerError exception if nmap is not found in the path
+
+        nmap_search_path = tupple of string where to search for nmap executable. Change this if you want to use a specific version of nmap.
         """
 
+        self._nmap_path = ''                # nmap path
         self._scan_result = {}
         self._nmap_version_number = 0       # nmap version number
         self._nmap_subversion_number = 0    # nmap subversion number
@@ -115,8 +124,21 @@ class PortScanner(object):
         # regex used to detect nmap
         regex = re.compile('Nmap version [0-9]*\.[0-9]*[^ ]* \( http://nmap\.org \)')
         # launch 'nmap -V', we wait after 'Nmap version 5.0 ( http://nmap.org )'
-        p = subprocess.Popen(['nmap', '-V'], bufsize=10000, stdout=subprocess.PIPE)
-        self._nmap_last_output = p.communicate()[0] # store stdout
+        # This is for Mac OSX. When idle3 is launched from the finder, PATH is not set so nmap was not found
+        for nmap_path in nmap_search_path:
+            try:
+                p = subprocess.Popen([nmap_path, '-V'], bufsize=10000, stdout=subprocess.PIPE)
+            except OSError:
+                pass
+            else:
+                self._nmap_path = nmap_path # save path 
+                break
+        else:
+            raise PortScannerError('nmap program was not found in path. PATH is : {0}'.format(os.getenv('PATH')))            
+
+
+            
+        self._nmap_last_output = bytes.decode(p.communicate()[0]) # store stdout
         for line in self._nmap_last_output.split('\n'):
             if regex.match(line) is not None:
                 is_nmap_found = True
@@ -161,7 +183,7 @@ class PortScanner(object):
         """
         do not scan but interpret target hosts and return a list a hosts
         """
-        assert type(hosts) in types.StringTypes, 'Wrong type for [hosts], should be a string [was {0}]'.format(type(hosts))
+        assert type(hosts) is str, 'Wrong type for [hosts], should be a string [was {0}]'.format(type(hosts))
         
         self.scan(hosts, arguments='-sL')
         return self.all_hosts()
@@ -178,20 +200,22 @@ class PortScanner(object):
         ports = string for ports as nmap use it '22,53,110,143-4564'
         arguments = string of arguments for nmap '-sU -sX -sC'
         """
-        assert type(hosts) in types.StringTypes, 'Wrong type for [hosts], should be a string [was {0}]'.format(type(hosts))
-        assert type(ports) in types.StringTypes+(types.NoneType,), 'Wrong type for [ports], should be a string [was {0}]'.format(type(ports))
-        assert type(arguments) in types.StringTypes, 'Wrong type for [arguments], should be a string [was {0}]'.format(type(arguments))
+        assert type(hosts) is str, 'Wrong type for [hosts], should be a string [was {0}]'.format(type(hosts))
+        assert type(ports) in (str, type(None)), 'Wrong type for [ports], should be a string [was {0}]'.format(type(ports))
+        assert type(arguments) is str, 'Wrong type for [arguments], should be a string [was {0}]'.format(type(arguments))
 
         f_args = shlex.split(arguments)
         
         # Launch scan
-        args = ['nmap', '-oX', '-', hosts] + ['-p', ports]*(ports!=None) + f_args
+        args = [self._nmap_path, '-oX', '-', hosts] + ['-p', ports]*(ports!=None) + f_args
 
         p = subprocess.Popen(args, bufsize=100000, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # wait until finished
         # get output
         (self._nmap_last_output, nmap_err) = p.communicate()
+        self._nmap_last_output = bytes.decode(self._nmap_last_output)
+        nmap_err = bytes.decode(nmap_err)
 
         # If there was something on stderr, there was a problem so abort...
         if len(nmap_err) > 0:
@@ -275,7 +299,7 @@ class PortScanner(object):
                 for dname in dport.getElementsByTagName('service'):
                     name = dname.getAttributeNode('name').value
                 # store everything
-                if not proto in scan_result['scan'][host].keys():
+                if not proto in list(scan_result['scan'][host].keys()):
                     scan_result['scan'][host][proto] = {}
                 scan_result['scan'][host][proto][port] = {'state': state,
                                                   'reason': reason,
@@ -286,7 +310,7 @@ class PortScanner(object):
                 for dscript in dport.getElementsByTagName('script'):
                     script_id = dscript.getAttributeNode('id').value
                     script_out = dscript.getAttributeNode('output').value
-                    if not 'script' in scan_result['scan'][host][proto][port].keys():
+                    if not 'script' in list(scan_result['scan'][host][proto][port].keys()):
                         scan_result['scan'][host][proto][port]['script'] = {}
 
                     scan_result['scan'][host][proto][port]['script'][script_id] = script_out
@@ -301,7 +325,7 @@ class PortScanner(object):
         """
         returns a host detail
         """
-        assert type(host) in types.StringTypes, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
+        assert type(host) is str, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
         return self._scan_result['scan'][host]
 
 
@@ -309,9 +333,9 @@ class PortScanner(object):
         """
         returns a sorted list of all hosts
         """
-        if not 'scan' in self._scan_result.keys():
+        if not 'scan' in list(self._scan_result.keys()):
             return []
-        listh = self._scan_result['scan'].keys()
+        listh = list(self._scan_result['scan'].keys())
         listh.sort()
         return listh
         
@@ -319,23 +343,38 @@ class PortScanner(object):
     def command_line(self):
         """
         returns command line used for the scan
+
+        may raise AssertionError exception if called before scanning
         """
+        assert 'nmap' in self._scan_result, 'Do a scan before trying to get result !'
+        assert 'command_line' in self._scan_result['nmap'], 'Do a scan before trying to get result !'
+
         return self._scan_result['nmap']['command_line']
 
 
     def scaninfo(self):
         """
         returns scaninfo structure
-        {u'tcp': {'services': u'22', 'method': u'connect'}}
-        """
-        return self._scan_result['nmap']['scaninfo']
-        
+        {'tcp': {'services': '22', 'method': 'connect'}}
 
+        may raise AssertionError exception if called before scanning
+        """
+        assert 'nmap' in self._scan_result, 'Do a scan before trying to get result !'
+        assert 'scaninfo' in self._scan_result['nmap'], 'Do a scan before trying to get result !'
+
+        return self._scan_result['nmap']['scaninfo']
+            
+        
     def scanstats(self):
         """
         returns scanstats structure
-        {'uphosts': u'3', 'timestr': u'Thu Jun  3 21:45:07 2010', 'downhosts': u'253', 'totalhosts': u'256', 'elapsed': u'5.79'}
+        {'uphosts': '3', 'timestr': 'Thu Jun  3 21:45:07 2010', 'downhosts': '253', 'totalhosts': '256', 'elapsed': '5.79'}
+
+        may raise AssertionError exception if called before scanning
         """
+        assert 'nmap' in self._scan_result, 'Do a scan before trying to get result !'
+        assert 'scanstats' in self._scan_result['nmap'], 'Do a scan before trying to get result !'
+
         return self._scan_result['nmap']['scanstats']        
 
 
@@ -343,9 +382,10 @@ class PortScanner(object):
         """
         returns True if host has result, False otherwise
         """
-        assert type(host) is types.StringTypes, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
+        assert type(host) is str, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
+        assert 'scan' in self._scan_result, 'Do a scan before trying to get result !'
 
-        if host in self._scan_result['scan'].keys():
+        if host in list(self._scan_result['scan'].keys()):
             return True
 
         return False
@@ -394,10 +434,10 @@ class PortScannerAsync(object):
         callback = callback function which takes (host, scan_data) as arguments
         """
 
-        assert type(hosts) in types.StringTypes, 'Wrong type for [hosts], should be a string [was {0}]'.format(type(hosts))
-        assert type(ports) in types.StringTypes+(types.NoneType,), 'Wrong type for [ports], should be a string [was {0}]'.format(type(ports))
-        assert type(arguments) in types.StringTypes, 'Wrong type for [arguments], should be a string [was {0}]'.format(type(arguments))
-        assert type(callback) in (types.FunctionType, types.NoneType), 'Wrong type for [callback], should be a function or None [was {0}]'.format(type(callback))
+        assert type(hosts) is str, 'Wrong type for [hosts], should be a string [was {0}]'.format(type(hosts))
+        assert type(ports) in (str, type(None)), 'Wrong type for [ports], should be a string [was {0}]'.format(type(ports))
+        assert type(arguments) is str, 'Wrong type for [arguments], should be a string [was {0}]'.format(type(arguments))
+        assert type(callback) in (types.FunctionType, type(None)), 'Wrong type for [callback], should be a function or None [was {0}]'.format(type(callback))
         
         def scan_progressive(self, hosts, ports, arguments, callback):
             for host in self._nm.listscan(hosts):
@@ -405,7 +445,7 @@ class PortScannerAsync(object):
                     scan_data = self._nm.scan(host, ports, arguments)
                 except PortScannerError:
                     pass
-                if callback is not None and callable(callback):
+                if callback is not None and isinstance(callback, collections.Callable):
                     callback(host, scan_data)
             return
 
@@ -432,7 +472,7 @@ class PortScannerAsync(object):
         Wait for the current scan process to finish, or timeout
         """
 
-        assert type(timeout) in (types.IntType, types.NoneType), 'Wrong type for [timeout], should be an int or None [was {0}]'.format(type(timeout))
+        assert type(timeout) in (int, type(None)), 'Wrong type for [timeout], should be an int or None [was {0}]'.format(type(timeout))
 
         self._process.join(timeout)
         return
@@ -476,7 +516,7 @@ class PortScannerHostDict(dict):
         """
         returns a list of all scanned protocols
         """
-        lp = self.keys()
+        lp = list(self.keys())
         lp.remove('status')
         lp.remove('hostname')
         lp.sort()
@@ -488,8 +528,8 @@ class PortScannerHostDict(dict):
         """
         returns list of tcp ports
         """
-        if 'tcp' in self.keys():
-            ltcp = self['tcp'].keys()
+        if 'tcp' in list(self.keys()):
+            ltcp = list(self['tcp'].keys())
             ltcp.sort()
             return ltcp
         return []
@@ -499,10 +539,10 @@ class PortScannerHostDict(dict):
         """
         returns True if tcp port has info, False otherwise
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
         
-        if ('tcp' in self.keys()
-            and port in self['tcp'].keys()):
+        if ('tcp' in list(self.keys())
+            and port in list(self['tcp'].keys())):
             return True
         return False
 
@@ -511,7 +551,7 @@ class PortScannerHostDict(dict):
         """
         returns info for tpc port
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
         return self['tcp'][port]
 
 
@@ -519,8 +559,8 @@ class PortScannerHostDict(dict):
         """
         returns list of udp ports
         """
-        if 'udp' in self.keys():
-            ludp = self['udp'].keys()
+        if 'udp' in list(self.keys()):
+            ludp = list(self['udp'].keys())
             ludp.sort()
             return ludp
         return []
@@ -530,10 +570,10 @@ class PortScannerHostDict(dict):
         """
         returns True if udp port has info, False otherwise
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
 
-        if ('udp' in self.keys()
-            and 'port' in self['udp'].keys()):
+        if ('udp' in list(self.keys())
+            and 'port' in list(self['udp'].keys())):
             return True
         return False
 
@@ -542,7 +582,7 @@ class PortScannerHostDict(dict):
         """
         returns info for udp port
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
 
         return self['udp'][port]
 
@@ -551,8 +591,8 @@ class PortScannerHostDict(dict):
         """
         returns list of ip ports
         """
-        if 'ip' in self.keys():
-            lip = self['ip'].keys()
+        if 'ip' in list(self.keys()):
+            lip = list(self['ip'].keys())
             lip.sort()
             return lip
         return []
@@ -562,10 +602,10 @@ class PortScannerHostDict(dict):
         """
         returns True if ip port has info, False otherwise
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
 
-        if ('ip' in self.keys()
-            and port in self['ip'].keys()):
+        if ('ip' in list(self.keys())
+            and port in list(self['ip'].keys())):
             return True
         return False
 
@@ -574,7 +614,7 @@ class PortScannerHostDict(dict):
         """
         returns info for ip port
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
 
         return self['ip'][port]
 
@@ -583,8 +623,8 @@ class PortScannerHostDict(dict):
         """
         returns list of sctp ports
         """
-        if 'sctp' in self.keys():
-            lsctp = self['sctp'].keys()
+        if 'sctp' in list(self.keys()):
+            lsctp = list(self['sctp'].keys())
             lsctp.sort()
             return lsctp
         return []
@@ -594,10 +634,10 @@ class PortScannerHostDict(dict):
         """
         returns True if sctp port has info, False otherwise
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
 
-        if ('sctp' in self.keys()
-            and port in self['sctp'].keys()):
+        if ('sctp' in list(self.keys())
+            and port in list(self['sctp'].keys())):
             return True
         return False
 
@@ -606,7 +646,7 @@ class PortScannerHostDict(dict):
         """
         returns info for sctp port
         """
-        assert type(port) is types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) is int, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
 
         return self['sctp'][port]
 
