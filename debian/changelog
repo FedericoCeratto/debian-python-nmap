@@ -1,14 +1,15 @@
-python-nmap (0.2.2-2) unstable; urgency=low
+python-nmap (0.2.4-1) UNRELEASED; urgency=low
 
   [ Federico Ceratto ]
   * Upload to unstable
+  * New upstream release.
   * Bugfix (Closes: #622991)
   * Transition to dh_python2
 
   [ David Paleino ]
   * Acknowledged DMUA flag for Federico.
 
- -- David Paleino <dapal@debian.org>  Mon, 12 Dec 2011 20:42:03 +0100
+ -- David Paleino <dapal@debian.org>  Mon, 12 Dec 2011 21:02:43 +0100
 
 python-nmap (0.2.2-1) experimental; urgency=low
 

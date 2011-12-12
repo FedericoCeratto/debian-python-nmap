@@ -7,7 +7,7 @@ Uploaders:
  David Paleino <dapal@debian.org>
 Build-Depends: debhelper (>= 8.0.0~)
  , python-all (>= 2.6.6-3~)
- , python3
+ , python3-all
  , nmap
 Standards-Version: 3.9.2
 Homepage: http://xael.org/norman/python/python-nmap/
@@ -20,7 +20,7 @@ Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
 Provides: ${python:Provides}
 Description: Python interface to the Nmap port scanner
- It allows to manipulate nmap scan results and can
- be useful for systems administrators who want to 
+ It helps manipulating nmap scan results and can
+ be useful to systems administrators to
  automate scanning task and reports.
  It also supports nmap script outputs.

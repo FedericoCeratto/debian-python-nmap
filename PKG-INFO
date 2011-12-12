@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: python-nmap
-Version: 0.2.2
+Version: 0.2.4
 Summary: This is a python class to use nmap and access scan results from python3
 Home-page: http://xael.org/norman/python/python-nmap/
 Author: Alexandre Norman
@@ -82,6 +82,17 @@ Description: ===========
         
         Changelog
         =========
+        2011/11/09 (v0.2.4)
+         - implemented a request from Santhosh Edukulla <santhosh.edukulla@gmail.com> :
+           parse OS scanning output
+         - Error with multiple host specifications :
+           bug and patch from old.schepperhand@gmail.com 
+        
+        2011/11/04
+         - bug in example.py : if no tcp port was open between 22-443
+        
+        2010/12/17 (v0.2.3)
+         - adding __get_last_online_version to check if current version is the last published
         
         2010/12/17 (v0.2.2)
          - bug in handling nmap_error output (returned value was bin, string was expected)
