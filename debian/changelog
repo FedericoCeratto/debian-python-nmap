@@ -1,3 +1,9 @@
+python-nmap (0.2.4-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Mon, 12 Dec 2011 19:54:26 +0000
+
 python-nmap (0.2.2-2) UNRELEASED; urgency=low
 
   [ Federico Ceratto ]
