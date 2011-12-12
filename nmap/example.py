@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 
 """
-example.py - 2010.12.14
+example.py - 2011.11.09
 
 Author : Alexandre Norman - norman@xael.org
 Contributor: Steve 'Ashcrow' Milner - steve@gnulinux.net
@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 import sys
-
+import os
 
 import nmap                         # import nmap.py module
 try:
@@ -48,15 +48,17 @@ nm.all_hosts()                      # get all hosts that were scanned
 nm['127.0.0.1'].hostname()          # get hostname for host 127.0.0.1
 nm['127.0.0.1'].state()             # get state of host 127.0.0.1 (up|down|unknown|skipped) 
 nm['127.0.0.1'].all_protocols()     # get all scanned protocols ['tcp', 'udp'] in (ip|tcp|udp|sctp)
-list(nm['127.0.0.1']['tcp'].keys()) # get all ports for tcp protocol
+if ('tcp' in nm['127.0.0.1']):
+    list(nm['127.0.0.1']['tcp'].keys()) # get all ports for tcp protocol
+
 nm['127.0.0.1'].all_tcp()           # get all ports for tcp protocol (sorted version)
 nm['127.0.0.1'].all_udp()           # get all ports for udp protocol (sorted version)
 nm['127.0.0.1'].all_ip()            # get all ports for ip protocol (sorted version)
 nm['127.0.0.1'].all_sctp()          # get all ports for sctp protocol (sorted version)
-nm['127.0.0.1'].has_tcp(22)         # is there any information for port 22/tcp on host 127.0.0.1
-nm['127.0.0.1']['tcp'][22]          # get infos about port 22 in tcp on host 127.0.0.1
-nm['127.0.0.1'].tcp(22)             # get infos about port 22 in tcp on host 127.0.0.1
-nm['127.0.0.1']['tcp'][22]['state'] # get state of port 22/tcp on host 127.0.0.1 (open
+if nm['127.0.0.1'].has_tcp(22):     # is there any information for port 22/tcp on host 127.0.0.1
+    nm['127.0.0.1']['tcp'][22]          # get infos about port 22 in tcp on host 127.0.0.1
+    nm['127.0.0.1'].tcp(22)             # get infos about port 22 in tcp on host 127.0.0.1
+    nm['127.0.0.1']['tcp'][22]['state'] # get state of port 22/tcp on host 127.0.0.1 (open
 
 
 # a more usefull example :
@@ -105,4 +107,26 @@ while nma.still_scanning():
     print("Waiting ...")
     nma.wait(2)   # you can do whatever you want but I choose to wait after the end of the scan
 
+if (os.getuid() == 0):
+    print('----------------------------------------------------')
+    # Os detection (need root privileges)
+    nm.scan("127.0.0.1", arguments="-O")
+    if nm['127.0.0.1'].has_key('osclass'):
+        for osclass in nm['127.0.0.1']['osclass']:
+            print('OsClass.type : {0}'.format(osclass['type']))
+            print('OsClass.vendor : {0}'.format(osclass['vendor']))
+            print('OsClass.osfamily : {0}'.format(osclass['osfamily']))
+            print('OsClass.osgen : {0}'.format(osclass['osgen']))
+            print('OsClass.accuracy : {0}'.format(osclass['accuracy']))
+            print('')
+
+    if nm['127.0.0.1'].has_key('osmatch'):
+        for osmatch in nm['127.0.0.1']['osmatch']:
+            print('OsMatch.name : {0}'.format(osclass['name']))
+            print('OsMatch.accuracy : {0}'.format(osclass['accuracy']))
+            print('OsMatch.line : {0}'.format(osclass['line']))
+            print('')
+
+    if nm['127.0.0.1'].has_key('fingerprint'):
+        print('Fingerprint : {0}'.format(nm['127.0.0.1']['fingerprint']))
 
