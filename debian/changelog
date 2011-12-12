@@ -1,4 +1,4 @@
-python-nmap (0.2.4-1) UNRELEASED; urgency=low
+python-nmap (0.2.4-1) unstable; urgency=low
 
   [ Federico Ceratto ]
   * Upload to unstable
@@ -9,7 +9,7 @@ python-nmap (0.2.4-1) UNRELEASED; urgency=low
   [ David Paleino ]
   * Acknowledged DMUA flag for Federico.
 
- -- David Paleino <dapal@debian.org>  Mon, 12 Dec 2011 21:02:43 +0100
+ -- David Paleino <dapal@debian.org>  Mon, 12 Dec 2011 21:03:17 +0100
 
 python-nmap (0.2.2-1) experimental; urgency=low
 
