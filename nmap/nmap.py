@@ -7,6 +7,8 @@ nmap.py - version and date, see below
 Author : Alexandre Norman - norman at xael.org
 Contributors: Steve 'Ashcrow' Milner - steve at gnulinux.net
               Brian Bustin - brian at bustin.us
+              old.schepperhand
+              Johan Lundberg 
 Licence : GPL v3 or any later version
 
 
@@ -34,29 +36,31 @@ Test strings :
 ...     nm.scan(arguments='-wrongargs')
 ... except nmap.PortScannerError:
 ...     pass
+>>> 'error' in nm.scan('yahoo.fs', arguments='-sP')['nmap']['scaninfo']
+True
 >>> r=nm.scan('127.0.0.1', '22-443')
 >>> nm.command_line()
 'nmap -oX - -p 22-443 -sV 127.0.0.1'
 >>> nm.scaninfo()
-{'tcp': {'services': '22-443', 'method': 'connect'}}
+{'tcp': {'services': '22-443', 'method': 'syn'}}
 >>> nm.all_hosts()
 ['127.0.0.1']
 >>> nm['127.0.0.1'].hostname()
-'localhost.localdomain'
+'localhost'
 >>> nm['127.0.0.1'].state()
 'up'
 >>> nm['127.0.0.1'].all_protocols()
-['tcp']
+['addresses', 'tcp']
 >>> nm['127.0.0.1']['tcp'].keys()
-dict_keys([80, 25, 443, 22, 111])
+dict_keys([139, 111, 80, 53, 22, 25, 443])
 >>> nm['127.0.0.1'].has_tcp(22)
 True
 >>> nm['127.0.0.1'].has_tcp(23)
 False
 >>> nm['127.0.0.1']['tcp'][22]
-{'state': 'open', 'reason': 'syn-ack', 'name': 'ssh'}
+{'product': 'OpenSSH', 'name': 'ssh', 'extrainfo': 'protocol 2.0', 'reason': 'syn-ack', 'state': 'open', 'version': '5.9p1 Debian 5ubuntu1', 'conf': '10'}
 >>> nm['127.0.0.1'].tcp(22)
-{'state': 'open', 'reason': 'syn-ack', 'name': 'ssh'}
+{'product': 'OpenSSH', 'name': 'ssh', 'extrainfo': 'protocol 2.0', 'reason': 'syn-ack', 'state': 'open', 'version': '5.9p1 Debian 5ubuntu1', 'conf': '10'}
 >>> nm['127.0.0.1']['tcp'][22]['state']
 'open'
 >>> nm.scanstats()['uphosts']
@@ -75,26 +79,31 @@ True
 ['127.0.0.0', '127.0.0.1', '127.0.0.2', '127.0.0.3']
 >>> r=nm.scan('127.0.0.1', arguments='-O')
 >>> nm['127.0.0.1']['osclass']
-[{'vendor': u'Linux', 'osfamily': u'Linux', 'type': u'general purpose', 'osgen': u'2.6.X', 'accuracy': u'98'}, {'vendor': u'Netgear', 'osfamily': u'embedded', 'type': u'WAP', 'osgen': '', 'accuracy': ''}, {'vendor': u'Gemtek', 'osfamily': u'embedded', 'type': u'WAP', 'osgen': '', 'accuracy': ''}, {'vendor': u'Siemens', 'osfamily': u'embedded', 'type': u'WAP', 'osgen': '', 'accuracy': ''}, {'vendor': u'Linux', 'osfamily': u'Linux', 'type': u'general purpose', 'osgen': u'2.4.X', 'accuracy': u'90'}, {'vendor': u'Linksys', 'osfamily': u'embedded', 'type': u'WAP', 'osgen': '', 'accuracy': ''}, {'vendor': u'Linux', 'osfamily': u'Linux', 'type': u'WAP', 'osgen': u'2.4.X', 'accuracy': u'90'}, {'vendor': u'Nokia', 'osfamily': u'Linux', 'type': u'general purpose', 'osgen': u'2.6.X', 'accuracy': u'89'}]
+[{'vendor': 'Linux', 'osfamily': 'Linux', 'type': 'general purpose', 'osgen': '2.6.X', 'accuracy': '96'}, {'vendor': 'AXIS', 'osfamily': 'Linux', 'type': 'webcam', 'osgen': '2.6.X', 'accuracy': '91'}, {'vendor': 'Crestron', 'osfamily': '2-Series', 'type': 'specialized', 'osgen': '', 'accuracy': ''}, {'vendor': 'Gemtek', 'osfamily': 'embedded', 'type': 'WAP', 'osgen': '', 'accuracy': ''}, {'vendor': 'Siemens', 'osfamily': 'embedded', 'type': 'WAP', 'osgen': '', 'accuracy': ''}, {'vendor': 'Linux', 'osfamily': 'Linux', 'type': 'general purpose', 'osgen': '2.4.X', 'accuracy': '88'}, {'vendor': 'Linux', 'osfamily': 'Linux', 'type': 'WAP', 'osgen': '2.6.X', 'accuracy': '88'}, {'vendor': 'Check Point', 'osfamily': 'embedded', 'type': 'firewall', 'osgen': '', 'accuracy': ''}, {'vendor': 'Check Point', 'osfamily': 'Linux', 'type': 'firewall', 'osgen': '2.4.X', 'accuracy': '88'}, {'vendor': 'Linux', 'osfamily': 'Linux', 'type': 'WAP', 'osgen': '2.4.X', 'accuracy': '88'}, {'vendor': 'Linux', 'osfamily': 'Linux', 'type': 'general purpose', 'osgen': '', 'accuracy': ''}, {'vendor': 'Vodavi', 'osfamily': 'embedded', 'type': 'PBX', 'osgen': '', 'accuracy': ''}, {'vendor': 'Lexmark', 'osfamily': 'embedded', 'type': 'printer', 'osgen': '', 'accuracy': ''}]
 >>> nm['127.0.0.1']['fingerprint']
-'OS:SCAN(V=5.50%D=11/9%OT=22%CT=1%CU=37937%PV=N%DS=0%DC=L%G=Y%TM=4EBAE79D%P=\\nOS:i686-pc-linux-gnu)SEQ(SP=103%GCD=1%ISR=10D%TI=Z%CI=Z%II=I%TS=8)OPS(O1=M4\\nOS:00CST11NW6%O2=M400CST11NW6%O3=M400CNNT11NW6%O4=M400CST11NW6%O5=M400CST11\\nOS:NW6%O6=M400CST11)WIN(W1=8000%W2=8000%W3=8000%W4=8000%W5=8000%W6=8000)ECN\\nOS:(R=Y%DF=Y%T=40%W=8018%O=M400CNNSNW6%CC=Y%Q=)T1(R=Y%DF=Y%T=40%S=O%A=S+%F=\\nOS:AS%RD=0%Q=)T2(R=N)T3(R=Y%DF=Y%T=40%W=8000%S=O%A=S+%F=AS%O=M400CST11NW6%R\\nOS:D=0%Q=)T4(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T5(R=Y%DF=Y%T=40%W=0%\\nOS:S=Z%A=S+%F=AR%O=%RD=0%Q=)T6(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T7(\\nOS:R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)U1(R=Y%DF=N%T=40%IPL=164%UN=0\\nOS:%RIPL=G%RID=G%RIPCK=G%RUCK=G%RUD=G)IE(R=Y%DFI=N%T=40%CD=S)\\n'
+'OS:SCAN(V=5.21%D=2/24%OT=22%CT=1%CU=42516%PV=N%DS=0%DC=L%G=Y%TM=512A8382%P=\\nOS:x86_64-unknown-linux-gnu)SEQ(SP=106%GCD=1%ISR=10A%TI=Z%CI=Z%II=I%TS=8)OP\\nOS:S(O1=M400CST11NW6%O2=M400CST11NW6%O3=M400CNNT11NW6%O4=M400CST11NW6%O5=M4\\nOS:00CST11NW6%O6=M400CST11)WIN(W1=8000%W2=8000%W3=8000%W4=8000%W5=8000%W6=8\\nOS:000)ECN(R=Y%DF=Y%T=40%W=8018%O=M400CNNSNW6%CC=Y%Q=)T1(R=Y%DF=Y%T=40%S=O%\\nOS:A=S+%F=AS%RD=0%Q=)T2(R=N)T3(R=N)T4(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0\\nOS:%Q=)T5(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)T6(R=Y%DF=Y%T=40%W=0%S\\nOS:=A%A=Z%F=R%O=%RD=0%Q=)T7(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=)U1(R\\nOS:=Y%DF=N%T=40%IPL=164%UN=0%RIPL=G%RID=G%RIPCK=G%RUCK=G%RUD=G)IE(R=Y%DFI=N\\nOS:%T=40%CD=S)\\n'
+>>> nm.csv()
+'host;protocol;port;name;state;product;extrainfo;reason;version;conf\\r\\n127.0.0.1;tcp;22;ssh;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;25;smtp;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;53;domain;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;80;http;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;111;rpcbind;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;139;netbios-ssn;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;443;https;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;445;microsoft-ds;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;631;ipp;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;2049;nfs;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;3306;mysql;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;5222;unknown;open;;;syn-ack;;3\\r\\n127.0.0.1;tcp;5269;unknown;open;;;syn-ack;;3\\r\\n'
+
 """
 
 
 __author__ = 'Alexandre Norman (norman@xael.org)'
-__version__ = '0.2.4'
-__last_modification__ = '2011.11.09'
+__version__ = '0.2.7'
+__last_modification__ = '2012.12.13'
 
 
+import collections
+import csv
+import io
 import os
 import re
+import shlex
 import string
 import subprocess
 import sys
 import types
 import xml.dom.minidom
-import shlex
-import collections
 
 
 try:
@@ -129,7 +138,7 @@ class PortScanner(object):
         self.__process = None
 
         # regex used to detect nmap
-        regex = re.compile('Nmap version [0-9]*\.[0-9]*[^ ]* \( http://nmap\.org \)')
+        regex = re.compile('Nmap version [0-9]*\.[0-9]*[^ ]* \( http://.* \)')
         # launch 'nmap -V', we wait after 'Nmap version 5.0 ( http://nmap.org )'
         # This is for Mac OSX. When idle3 is launched from the finder, PATH is not set so nmap was not found
         for nmap_path in nmap_search_path:
@@ -201,7 +210,10 @@ class PortScanner(object):
         """
         Scan given hosts
 
-        May raise PortScannerError exception if nmap output something on stderr
+        May raise PortScannerError exception if nmap output was not xml
+
+        Test existance of the following key to know if something went wrong : ['nmap']['scaninfo']['error']
+        If not present, everything was ok.
 
         hosts = string for hosts as nmap use it 'scanme.nmap.org' or '198.116.0-255.1-127' or '216.163.128.20/20'
         ports = string for ports as nmap use it '22,53,110,143-4564'
@@ -228,7 +240,16 @@ class PortScanner(object):
         self._nmap_last_output = bytes.decode(self._nmap_last_output)
         nmap_err = bytes.decode(nmap_err)
 
-        # If there was something on stderr, there was a problem so abort...
+        # If there was something on stderr, there was a problem so abort...  in
+        # fact not always. As stated by AlenLPeacock :
+        # This actually makes python-nmap mostly unusable on most real-life
+        # networks -- a particular subnet might have dozens of scannable hosts,
+        # but if a single one is unreachable or unroutable during the scan,
+        # nmap.scan() returns nothing. This behavior also diverges significantly
+        # from commandline nmap, which simply stderrs individual problems but
+        # keeps on trucking.
+
+        nmap_err_keep_trace = []
         if len(nmap_err) > 0:
             regex_warning = re.compile('^Warning: .*')
             for line in nmap_err.split('\n'):
@@ -238,8 +259,8 @@ class PortScanner(object):
                         sys.stderr.write(line+'\n')
                         pass
                     else:
-                        raise PortScannerError(nmap_err)
-
+                        #raise PortScannerError(nmap_err)
+                        nmap_err_keep_trace.append(nmap_err)
 
         # nmap xml output looks like :
         #  <host starttime="1267974521" endtime="1267974522">
@@ -262,8 +283,15 @@ class PortScanner(object):
 
 
         scan_result = {}
-        
-        dom = xml.dom.minidom.parseString(self._nmap_last_output)
+
+
+        try:
+            dom = xml.dom.minidom.parseString(self._nmap_last_output)
+        except xml.parsers.expat.ExpatError:
+            if len(nmap_err)>0:
+                raise PortScannerError(nmap_err)
+            else:
+                raise PortScannerError(self._nmap_last_output)
 
         # nmap command line
         scan_result['nmap'] = {
@@ -275,6 +303,11 @@ class PortScanner(object):
                          'downhosts':dom.getElementsByTagName("hosts")[0].getAttributeNode('down').value,
                          'totalhosts':dom.getElementsByTagName("hosts")[0].getAttributeNode('total').value}
             }
+
+        # if there was an error
+        if len(nmap_err_keep_trace)>0:
+            scan_result['nmap']['scaninfo']['error'] = nmap_err_keep_trace
+
         # info about scan
         for dsci in dom.getElementsByTagName('scaninfo'):
             scan_result['nmap']['scaninfo'][dsci.getAttributeNode('protocol').value] = {                
@@ -286,16 +319,33 @@ class PortScanner(object):
         scan_result['scan'] = {}
         
         for dhost in  dom.getElementsByTagName('host'):
-            # host ip
-            host = dhost.getElementsByTagName('address')[0].getAttributeNode('addr').value
+            # host ip, mac and other addresses
+            host = None
+            address_block = {}
+            for address in dhost.getElementsByTagName('address'):
+                addtype = address.getAttributeNode('addrtype').value
+                address_block[addtype] = address.getAttributeNode('addr').value
+                if addtype == 'ipv4':
+                    host = address_block[addtype]
+
+            if host is None:
+                host = dhost.getElementsByTagName('address')[0].getAttributeNode('addr').value
+                
             hostname = ''
             for dhostname in dhost.getElementsByTagName('hostname'):
                 hostname = dhostname.getAttributeNode('name').value
             scan_result['scan'][host] = PortScannerHostDict({'hostname': hostname})
+
+            scan_result['scan'][host]['addresses'] = address_block
+
             for dstatus in dhost.getElementsByTagName('status'):
                 # status : up...
                 scan_result['scan'][host]['status'] = {'state': dstatus.getAttributeNode('state').value,
                                                'reason': dstatus.getAttributeNode('reason').value}
+            for dstatus in dhost.getElementsByTagName('uptime'):
+                # uptime : seconds, lastboot
+                scan_result['scan'][host]['uptime'] = {'seconds': dstatus.getAttributeNode('seconds').value,
+                                                'lastboot': dstatus.getAttributeNode('lastboot').value}
             for dport in dhost.getElementsByTagName('port'):
                 # protocol
                 proto = dport.getAttributeNode('protocol').value
@@ -305,16 +355,28 @@ class PortScanner(object):
                 state = dport.getElementsByTagName('state')[0].getAttributeNode('state').value
                 # reason
                 reason = dport.getElementsByTagName('state')[0].getAttributeNode('reason').value
-                # name if any
-                name = ''
+                # name, product, version, extra info and conf if any
+                name,product,version,extrainfo,conf = '','','','',''
                 for dname in dport.getElementsByTagName('service'):
                     name = dname.getAttributeNode('name').value
+                    if dname.hasAttribute('product'):
+                        product = dname.getAttributeNode('product').value
+                    if dname.hasAttribute('version'):
+                        version = dname.getAttributeNode('version').value
+                    if dname.hasAttribute('extrainfo'):
+                        extrainfo = dname.getAttributeNode('extrainfo').value
+                    if dname.hasAttribute('conf'):
+                        conf = dname.getAttributeNode('conf').value
                 # store everything
                 if not proto in list(scan_result['scan'][host].keys()):
                     scan_result['scan'][host][proto] = {}
                 scan_result['scan'][host][proto][port] = {'state': state,
                                                   'reason': reason,
-                                                  'name': name}
+                                                  'name': name,
+                                                  'product': product,
+                                                  'version': version,
+                                                  'extrainfo': extrainfo,
+                                                  'conf': conf}
                 script_id = ''
                 script_out = ''
                 # get script output if any
@@ -469,7 +531,59 @@ class PortScanner(object):
         return False
 
 
+    def csv(self):
+        """
+        returns CSV output as text
 
+        Example :
+        host;protocol;port;name;state;product;extrainfo;reason;version;conf
+        127.0.0.1;tcp;22;ssh;open;OpenSSH;protocol 2.0;syn-ack;5.9p1 Debian 5ubuntu1;10
+        127.0.0.1;tcp;23;telnet;closed;;;conn-refused;;3
+        127.0.0.1;tcp;24;priv-mail;closed;;;conn-refused;;3
+        """
+        assert 'scan' in self._scan_result, 'Do a scan before trying to get result !'
+
+        if sys.version_info < (3,0):
+            fd = io.BytesIO()
+        else:
+            fd = io.StringIO()
+            
+        csv_ouput = csv.writer(fd, delimiter=';')
+        csv_header = [
+            'host',
+            'protocol',
+            'port',
+            'name',
+            'state',
+            'product',
+            'extrainfo',
+            'reason',
+            'version',
+            'conf'
+            ]
+
+        csv_ouput.writerow(csv_header)
+
+        for host in self.all_hosts():
+            for proto in self[host].all_protocols():
+                if proto not in ['tcp', 'udp']:
+                    continue
+                lport = list(self[host][proto].keys())
+                lport.sort()
+                for port in lport:
+                    csv_row = [
+                        host, proto, port, 
+                        self[host][proto][port]['name'],
+                        self[host][proto][port]['state'],
+                        self[host][proto][port]['product'],
+                        self[host][proto][port]['extrainfo'],
+                        self[host][proto][port]['reason'],
+                        self[host][proto][port]['version'],
+                        self[host][proto][port]['conf']
+                        ]
+                    csv_ouput.writerow(csv_row)
+
+        return fd.getvalue()
 
 ############################################################################
 
@@ -582,13 +696,17 @@ class PortScannerHostDict(dict):
         """
         return self['hostname']
 
-
     def state(self):
         """
         returns host state
         """
         return self['status']['state']
 
+    def uptime(self):
+        """
+        returns host state
+        """
+        return self['uptime']
 
     def all_protocols(self):
         """
@@ -740,9 +858,11 @@ class PortScannerError(Exception):
     def __init__(self, value):
         self.value = value
 
-
     def __str__(self):
         return repr(self.value)
+
+    def __repr__(self):
+        return 'PortScannerError exception {0}'.format(self.value)
 
 
 ############################################################################
@@ -772,3 +892,4 @@ if __name__ == '__main__':
 
 
 #<EOF>######################################################################
+
