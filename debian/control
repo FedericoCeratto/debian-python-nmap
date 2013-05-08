@@ -2,18 +2,18 @@ Source: python-nmap
 Section: python
 Priority: optional
 Maintainer: Federico Ceratto <federico.ceratto@gmail.com>
-DM-Upload-Allowed: yes
 Uploaders:
  David Paleino <dapal@debian.org>
-Build-Depends: debhelper (>= 8.0.0~)
+Build-Depends: debhelper (>= 9~)
  , python-all (>= 2.6.6-3~)
  , python3-all
  , nmap
-Standards-Version: 3.9.2
+Standards-Version: 3.9.4
 Homepage: http://xael.org/norman/python/python-nmap/
 Vcs-Git: git://git.debian.org/git/collab-maint/python-nmap.git
 Vcs-Browser: http://git.debian.org/?p=collab-maint/python-nmap.git
 X-Python-Version: >= 2.6
+X-Python3-Version: >= 3.0
 
 Package: python-nmap
 Architecture: all
