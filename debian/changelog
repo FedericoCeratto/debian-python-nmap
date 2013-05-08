@@ -1,9 +1,9 @@
-python-nmap (0.2.7-1) UNRELEASED; urgency=low
+python-nmap (0.2.7-1) unstable; urgency=low
 
   * New upstream release.
   * Standards-Version bumped to 3.9.4, debhelper dependency bumped to 9
 
- -- Federico Ceratto <federico.ceratto@gmail.com>  Sun, 05 May 2013 11:44:43 +0100
+ -- Federico Ceratto <federico.ceratto@gmail.com>  Wed, 08 May 2013 21:01:42 +0100
 
 python-nmap (0.2.4-1) unstable; urgency=low
 
