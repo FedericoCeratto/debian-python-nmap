@@ -17,6 +17,7 @@ X-Python3-Version: >= 3.0
 
 Package: python-nmap
 Architecture: all
+Pre-Depends: dpkg (>= 1.15.6~)
 Depends: ${python:Depends}, ${misc:Depends}
 Provides: ${python:Provides}
 Description: Python interface to the Nmap port scanner
