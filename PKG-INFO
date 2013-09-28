@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: python-nmap
-Version: 0.3.1
+Version: 0.3.2
 Summary: This is a python class to use nmap and access scan results from python3
 Home-page: http://xael.org/norman/python/python-nmap/
 Author: Alexandre Norman
@@ -86,6 +86,9 @@ Description: ===========
         
         Changelog
         =========
+        2013/09/23 (v0.3.2)
+         - adding acces to CPE values under [host][proto][port]['cpe'] key
+        
         2013/07/27 (v0.3.1)
          - Bug correction on callback's assert in PortScannerAsync.scan
            proposed by Robert Bost
